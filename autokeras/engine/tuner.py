@@ -26,6 +26,8 @@ from autokeras import pipeline as pipeline_module
 from autokeras.utils import data_utils
 from autokeras.utils import utils
 
+from autokeras.utils import autotrainer
+
 
 class AutoTuner(kerastuner.engine.tuner.Tuner):
     """A Tuner class based on KerasTuner for AutoKeras.
@@ -97,6 +99,10 @@ class AutoTuner(kerastuner.engine.tuner.Tuner):
 
         model = self.hypermodel.build(trial.hyperparameters)
         self.adapt(model, fit_kwargs["x"])
+
+        dataset=list(fit_kwargs['x'].as_numpy_iterator())
+        predictor=autotrainer.LossHistory(training_data=dataset, model=model,total_epoch=fit_kwargs['epochs'])
+        fit_kwargs['callbacks'].append(predictor)
 
         _, history = utils.fit_with_adaptive_batch_size(
             model, self.hypermodel.hypermodel.batch_size, **fit_kwargs
@@ -178,8 +184,9 @@ class AutoTuner(kerastuner.engine.tuner.Tuner):
         self.hypermodel.build(hp)
         self.oracle.update_space(hp)
 
+        print('My version12')
         super().search(epochs=epochs, callbacks=new_callbacks, **fit_kwargs)
-
+        
         # Train the best model use validation data.
         # Train the best model with enough number of epochs.
         if validation_split > 0 or early_stopping_inserted:
